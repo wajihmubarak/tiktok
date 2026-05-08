@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borno TikTok Downloader</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #1c1c1e;
+            --input-bg: #f2f2f7;
+            --primary-blue: #3174ff;
+            --nav-inactive: #8e8e93;
+            --card-bg: #fff;
+        }
+
+        .dark-mode {
+            --bg-color: #121212;
+            --text-color: #ffffff;
+            --input-bg: #1c1c1e;
+            --primary-blue: #3a82ff;
+            --nav-inactive: #636366;
+            --card-bg: #1e1e1e;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; transition: 0.3s; }
+
+        body { background-color: var(--bg-color); color: var(--text-color); height: 100vh; overflow: hidden; display: flex; justify-content: center; }
+
+        .app-container { width: 100%; max-width: 450px; display: flex; flex-direction: column; position: relative; }
+
+        header { padding: 20px; display: flex; justify-content: space-between; }
+        .theme-toggle { font-size: 24px; cursor: pointer; color: var(--nav-inactive); }
+
+        .page { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.4s; }
+        .page.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1 { font-size: 24px; margin-bottom: 30px; font-weight: 700; text-align: center; }
+
+        .input-box { width: 100%; background-color: var(--input-bg); border-radius: 18px; padding: 15px; margin-bottom: 20px; border: 2px solid transparent; }
+        .input-box:focus-within { border-color: var(--primary-blue); }
+        .input-box input { width: 100%; background: transparent; border: none; outline: none; color: var(--text-color); text-align: center; font-size: 16px; }
+
+        .download-btn { width: 100%; background-color: var(--primary-blue); color: white; border: none; padding: 18px; border-radius: 18px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(49, 116, 255, 0.3); }
+        .download-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        /* شريط التنقل */
+        .bottom-nav { background-color: var(--bg-color); height: 80px; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--input-bg); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--nav-inactive); cursor: pointer; font-size: 13px; }
+        .nav-item.active { color: var(--primary-blue); }
+        .nav-item i { font-size: 22px; margin-bottom: 5px; }
+
+        /* منطقة المعاينة */
+        #previewArea { margin-top: 20px; width: 100%; display: none; text-align: center; background: var(--card-bg); padding: 15px; border-radius: 15px; }
+        #previewArea img { width: 100px; border-radius: 10px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <i class="fas fa-moon theme-toggle" id="themeBtn"></i>
+            <span style="font-weight: bold; color: var(--primary-blue);">BORNO</span>
+        </header>
+
+        <div id="homePage" class="page active">
+            <h1>تنزيل فيديو من TikTok</h1>
+            <div class="input-box">
+                <input type="text" id="videoLink" placeholder="ألحق رابط TikTok هنا">
+            </div>
+            <button class="download-btn" id="mainBtn" onclick="handleDownload()">تنزيل</button>
+
+            <div id="previewArea">
+                <img id="thumb" src="" alt="">
+                <p id="videoTitle" style="font-size: 14px; margin-bottom: 10px;"></p>
+                <a id="finalDownload" href="" target="_blank" style="color: var(--primary-blue); text-decoration: none; font-weight: bold;">اضغط هنا لبدء التحميل النهائي</a>
+            </div>
+        </div>
+
+        <div id="downloadPage" class="page">
+            <h1>السجل</h1>
+            <p style="color: var(--nav-inactive);">لا توجد تنزيلات سابقة</p>
+        </div>
+
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="showPage('homePage', this)">
+                <i class="fas fa-home"></i>
+                <span>الرئيسية</span>
+            </div>
+            <div class="nav-item" onclick="showPage('downloadPage', this)">
+                <i class="fas fa-history"></i>
+                <span>التنزيلات</span>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        // 1. تبديل الثيم
+        const themeBtn = document.getElementById('themeBtn');
+        themeBtn.onclick = () => {
+            document.body.classList.toggle('dark-mode');
+            themeBtn.classList.toggle('fa-sun');
+            themeBtn.classList.toggle('fa-moon');
+        };
+
+        // 2. التنقل
+        function showPage(pageId, element) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            element.classList.add('active');
+        }
+
+        // 3. وظيفة التنزيل الفعلي
+        async function handleDownload() {
+            const link = document.getElementById('videoLink').value;
+            const btn = document.getElementById('mainBtn');
+            const preview = document.getElementById('previewArea');
+
+            if(!link) return alert("ضع الرابط أولاً يا باشا!");
+
+            btn.innerText = "جاري الفحص...";
+            btn.disabled = true;
+
+            try {
+                // استدعاء سيرفر البايثون
+                const response = await fetch('http://127.0.0.1:5000/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: link })
+                });
+
+                const data = await response.json();
+
+                if(data.status === "success") {
+                    // عرض النتيجة
+                    document.getElementById('thumb').src = data.thumbnail;
+                    document.getElementById('videoTitle').innerText = data.title;
+                    document.getElementById('finalDownload').href = data.download_link;
+                    preview.style.display = "block";
+                    btn.innerText = "تم استخراج الفيديو";
+                } else {
+                    alert("فشل: " + data.message);
+                    btn.innerText = "تنزيل";
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                alert("تأكد أن سيرفر البايثون يعمل!");
+                btn.innerText = "تنزيل";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
